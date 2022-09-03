@@ -6,15 +6,10 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"go/ast"
-	"go/parser"
-	"go/token"
 	"io"
-	"io/fs"
 	"os"
-	"path/filepath"
-	"sort"
-	"strings"
+
+	"github.com/ninadingole/gotest-ls/pkg"
 )
 
 var (
@@ -38,16 +33,6 @@ var (
 	// errUnknown is the error message when the error is not an expected type.
 	errUnknown = errors.New("ERROR: unknown error")
 )
-
-// Detail is a struct that contains the details of a test.
-type Detail struct {
-	Name         string    `json:"name"`
-	FileName     string    `json:"fileName"`
-	RelativePath string    `json:"relativePath"`
-	AbsolutePath string    `json:"absolutePath"`
-	Line         int       `json:"line"`
-	Pos          token.Pos `json:"pos"`
-}
 
 func main() {
 	flag.Parse()
@@ -88,14 +73,9 @@ func Process(proc *args, writer io.Writer) error {
 		proc.dirs = append(proc.dirs, proc.file)
 	}
 
-	files, err := loadFiles(proc.dirs)
+	tests, err := pkg.List(proc.dirs)
 	if err != nil {
-		return err
-	}
-
-	tests, err := listTests(files)
-	if err != nil {
-		return err
+		return fmt.Errorf("%s: %w", errUnknown, err)
 	}
 
 	if len(tests) == 0 {
@@ -143,75 +123,6 @@ func validateArgs(args *args) error {
 // requiresHelp checks if the user has requested help and not provided any required arguments.
 func requiresHelp(proc *args) bool {
 	return (len(proc.dirs) == 0 && proc.file == "") || proc.help
-}
-
-// loadFiles loads all the go files in the given paths.
-func loadFiles(dirs []string) ([]string, error) {
-	var testFiles []string
-
-	for _, dir := range dirs {
-		err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
-			if err != nil {
-				return err
-			}
-
-			if !d.IsDir() && filepath.Ext(path) == ".go" && strings.HasSuffix(path, "_test.go") {
-				testFiles = append(testFiles, path)
-			}
-
-			return nil
-		})
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", errUnknown, err)
-		}
-	}
-
-	return testFiles, nil
-}
-
-// listTests lists all the tests in the given go test files.
-func listTests(files []string) ([]Detail, error) {
-	var tests []Detail
-
-	for _, testFile := range files {
-		fileAbsPath, err := filepath.Abs(testFile)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", errUnknown, err)
-		}
-
-		fileName := filepath.Base(testFile)
-
-		set := token.NewFileSet()
-
-		parseFile, err := parser.ParseFile(set, testFile, nil, parser.ParseComments)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", errUnknown, err)
-		}
-
-		for _, obj := range parseFile.Scope.Objects {
-			if obj.Kind == ast.Fun {
-				if strings.HasPrefix(obj.Name, "Test") ||
-					strings.HasPrefix(obj.Name, "Example") ||
-					strings.HasPrefix(obj.Name, "Benchmark") {
-					tests = append(tests, Detail{
-						Name:         obj.Name,
-						Pos:          obj.Pos(),
-						Line:         set.Position(obj.Pos()).Line,
-						FileName:     fileName,
-						RelativePath: testFile,
-						AbsolutePath: fileAbsPath,
-					})
-				}
-			}
-		}
-	}
-
-	// sort the tests by name
-	sort.Slice(tests, func(i, j int) bool {
-		return strings.Compare(tests[i].Name, tests[j].Name) < 0
-	})
-
-	return tests, nil
 }
 
 // prettyPrint prints the given json in a pretty format.

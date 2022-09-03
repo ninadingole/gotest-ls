@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ninadingole/gotest-ls/pkg"
 	"github.com/stretchr/testify/require"
 )
 
@@ -67,7 +68,7 @@ func Test_process(t *testing.T) {
 		wantErr     bool
 		expected    string
 		errExpected string
-		checks      func(t *testing.T, got []Detail)
+		checks      func(t *testing.T, got []pkg.TestDetail)
 	}{
 		{
 			name: "should return error if file and directory both are provided",
