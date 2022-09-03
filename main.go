@@ -35,6 +35,7 @@ var (
 )
 
 func main() {
+	flag.Usage = printHelpText(flag.CommandLine.Output())
 	flag.Parse()
 
 	err := Process(&args{
@@ -60,7 +61,7 @@ type args struct {
 // Process is the main function that processes the arguments and prints the output.
 func Process(proc *args, writer io.Writer) error {
 	if requiresHelp(proc) {
-		_ = printHelpText(writer)
+		printHelpText(writer)()
 
 		return nil
 	}
@@ -79,7 +80,7 @@ func Process(proc *args, writer io.Writer) error {
 	}
 
 	if len(tests) == 0 {
-		_, _ = writer.Write([]byte("No tests found"))
+		_, _ = writer.Write([]byte("No tests found\n"))
 
 		return nil
 	}
@@ -140,8 +141,11 @@ func prettyPrint(data []byte, writer io.Writer) error {
 }
 
 // printHelpText prints the help text for the program.
-func printHelpText(writer io.Writer) error {
-	_, err := writer.Write([]byte(`gotest-ls provides a list of all tests in a package or a file in JSON format.
+func printHelpText(writer io.Writer) func() {
+	return func() {
+		writer := writer
+
+		_, _ = fmt.Fprintf(writer, `gotest-ls provides a list of all tests in a package or a file in JSON format.
 
 Usage:
   gotest-ls [flags] [directories]
@@ -156,7 +160,7 @@ Examples:
 Flags:
   -f, --file string   Path to a file, cannot be used with directories
   -h, --help          help for gotest-ls
-  -p, --pretty        Pretty print the output in JSON format`))
-
-	return err
+  -p, --pretty        Pretty print the output in JSON format
+`)
+	}
 }

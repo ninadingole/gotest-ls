@@ -132,7 +132,8 @@ Examples:
 Flags:
   -f, --file string   Path to a file, cannot be used with directories
   -h, --help          help for gotest-ls
-  -p, --pretty        Pretty print the output in JSON format`,
+  -p, --pretty        Pretty print the output in JSON format
+`,
 		},
 		{
 			name: "return error if directory does not exist",
@@ -147,7 +148,7 @@ Flags:
 			args: args{
 				dirs: []string{"./dead-tests"},
 			},
-			expected: "No tests found",
+			expected: "No tests found\n",
 			wantErr:  false,
 		},
 	}
@@ -157,6 +158,7 @@ Flags:
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			writer := &bytes.Buffer{}
+
 			err := Process(&tt.args, writer)
 
 			if tt.wantErr {
