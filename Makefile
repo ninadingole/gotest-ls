@@ -30,6 +30,7 @@ test:
 .PHONY: lint
 lint: bin/$(GOLANGCI_LINT)
 	@echo "$(OK_COLOR)==> Running lint$(NO_COLOR)"
+	@gofumpt -e -d -w .
 	@bin/$(GOLANGCI_LINT) run -c .golangci.yml
 
 # Download and install golangci-lint
