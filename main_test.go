@@ -96,6 +96,43 @@ func Test_process(t *testing.T) {
 			},
 			expected: fmt.Sprintf(`[{"name":"TestSomething","fileName":"sample_test.go","relativePath":"./tests/sample_test.go","absolutePath":"%s/tests/sample_test.go","line":7,"pos":49}]`, pwd),
 		},
+		{
+			name: "should return the test details in a file with pretty flag",
+			args: args{
+				pretty: true,
+				file:   "./tests/sample_test.go",
+			},
+			expected: fmt.Sprintf(`[
+	{
+		"name": "TestSomething",
+		"fileName": "sample_test.go",
+		"relativePath": "./tests/sample_test.go",
+		"absolutePath": "%s/tests/sample_test.go",
+		"line": 7,
+		"pos": 49
+	}
+]`, pwd),
+		},
+		{
+			name: "should show help if no arguments are provided",
+			args: args{},
+			expected: `gotest-ls provides a list of all tests in a package or a file in JSON format.
+
+Usage:
+  gotest-ls [flags] [directories]
+
+Examples:
+	gotest-ls .
+ 	gotest-ls -p ./cmd
+ 	gotest-ls -p ./cmd ./pkg
+ 	gotest-ls -f ./pkg/random_test.go
+ 	gotest-ls -p -f ./pkg/random_test.go
+
+Flags:
+  -f, --file string   Path to a file, cannot be used with directories
+  -h, --help          help for gotest-ls
+  -p, --pretty        Pretty print the output in JSON formatnull`,
+		},
 	}
 	for _, tt := range tests {
 		tt := tt
