@@ -1,5 +1,8 @@
 
 ## Go List Tests
+![master](https://github.com/ninadingole/gotest-ls/actions/workflows/base.yml/badge.svg?branch=main)
+[![Go Reference](https://pkg.go.dev/badge/github.com/ninadingole/gotest-ls.svg)](https://pkg.go.dev/github.com/ninadingole/gotest-ls)
+[![codecov](https://codecov.io/gh/ninadingole/gotest-ls/branch/main/graph/badge.svg?token=9ZYKWNF6JI)](https://codecov.io/gh/ninadingole/gotest-ls)
 
 `gotest-ls` is a tool to list tests in a Go project. It provides list of all the Tests
 (`Test*`, `Benchmark*`, `Example*`) in a Go project or a go file.
