@@ -16,13 +16,10 @@ func TestListAllTestsForGivenFile(t *testing.T) {
 
 	var buffer bytes.Buffer
 
-	cmd := exec.Command("go", "run", "main.go", "./tests")
-	cmd.Stdout = &buffer
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
+	err := Process(&args{
+		dirs: []string{"./tests"},
+	}, &buffer)
 	require.NoError(t, err)
-
-	fmt.Println(buffer.String())
 
 	// This is to make it work on any OS and any folder
 	pwd, err := os.Getwd()
@@ -68,7 +65,7 @@ func Test_process(t *testing.T) {
 		name        string
 		args        args
 		wantErr     bool
-		expected    []Detail
+		expected    string
 		errExpected error
 		checks      func(t *testing.T, got []Detail)
 	}{
@@ -97,16 +94,7 @@ func Test_process(t *testing.T) {
 				pretty: false,
 				file:   "./tests/sample_test.go",
 			},
-			expected: []Detail{
-				{
-					Name:         "TestSomething",
-					FileName:     "sample_test.go",
-					RelativePath: "./tests/sample_test.go",
-					AbsolutePath: fmt.Sprintf("%s/tests/sample_test.go", pwd),
-					Line:         7,
-					Pos:          49,
-				},
-			},
+			expected: fmt.Sprintf(`[{"name":"TestSomething","fileName":"sample_test.go","relativePath":"./tests/sample_test.go","absolutePath":"%s/tests/sample_test.go","line":7,"pos":49}]`, pwd),
 		},
 	}
 	for _, tt := range tests {
@@ -114,8 +102,8 @@ func Test_process(t *testing.T) {
 
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-
-			details, err := Process(&tt.args)
+			writer := &bytes.Buffer{}
+			err := Process(&tt.args, writer)
 
 			if tt.wantErr {
 				require.Error(t, err)
@@ -124,7 +112,8 @@ func Test_process(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			require.Equal(t, tt.expected, details)
+			fmt.Println(writer.String())
+			require.Equal(t, tt.expected, writer.String())
 		})
 	}
 }

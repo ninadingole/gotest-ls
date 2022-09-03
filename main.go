@@ -9,6 +9,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -51,12 +52,12 @@ type Detail struct {
 func main() {
 	flag.Parse()
 
-	_, err := Process(&args{
+	err := Process(&args{
 		file:   *file,
 		dirs:   flag.Args(),
 		help:   *help,
 		pretty: *pretty,
-	})
+	}, os.Stdout)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -72,13 +73,13 @@ type args struct {
 }
 
 // Process is the main function that processes the arguments and prints the output.
-func Process(proc *args) ([]Detail, error) {
+func Process(proc *args, writer io.Writer) error {
 	if requiresHelp(proc) {
-		printHelpText()
+		_ = printHelpText(writer)
 	}
 
 	if err := validateArgs(proc); err != nil {
-		return nil, err
+		return err
 	}
 
 	if proc.file != "" {
@@ -87,28 +88,28 @@ func Process(proc *args) ([]Detail, error) {
 
 	files, err := loadFiles(proc.dirs)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	tests, err := listTests(files)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	marshal, err := json.Marshal(tests)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", errUnknown, err)
+		return fmt.Errorf("%s: %w", errUnknown, err)
 	}
 
 	if proc.pretty {
-		if err := prettyPrint(marshal); err != nil {
-			return nil, err
+		if err := prettyPrint(marshal, writer); err != nil {
+			return err
 		}
 	} else {
-		fmt.Println(string(marshal))
+		_, _ = writer.Write(marshal)
 	}
 
-	return tests, nil
+	return nil
 }
 
 // validateArgs validates the arguments provided by the user.
@@ -202,7 +203,7 @@ func listTests(files []string) ([]Detail, error) {
 }
 
 // prettyPrint prints the given json in a pretty format.
-func prettyPrint(data []byte) error {
+func prettyPrint(data []byte, writer io.Writer) error {
 	var prettyJSON bytes.Buffer
 
 	err := json.Indent(&prettyJSON, data, "", "\t")
@@ -210,14 +211,14 @@ func prettyPrint(data []byte) error {
 		return fmt.Errorf("%s: %w", errUnknown, err)
 	}
 
-	fmt.Println(prettyJSON.String())
+	_, err = writer.Write(prettyJSON.Bytes())
 
-	return nil
+	return err
 }
 
 // printHelpText prints the help text for the program.
-func printHelpText() {
-	fmt.Println(`gotest-ls provides a list of all tests in a package or a file in JSON format.
+func printHelpText(writer io.Writer) error {
+	_, err := writer.Write([]byte(`gotest-ls provides a list of all tests in a package or a file in JSON format.
 
 Usage:
   gotest-ls [flags] [directories]
@@ -232,5 +233,7 @@ Examples:
 Flags:
   -f, --file string   Path to a file, cannot be used with directories
   -h, --help          help for gotest-ls
-  -p, --pretty        Pretty print the output in JSON format`)
+  -p, --pretty        Pretty print the output in JSON format`))
+
+	return err
 }
