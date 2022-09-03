@@ -66,7 +66,7 @@ func Test_process(t *testing.T) {
 		args        args
 		wantErr     bool
 		expected    string
-		errExpected error
+		errExpected string
 		checks      func(t *testing.T, got []Detail)
 	}{
 		{
@@ -77,7 +77,7 @@ func Test_process(t *testing.T) {
 				dirs:   []string{"./tests"},
 			},
 			wantErr:     true,
-			errExpected: errPathIssue,
+			errExpected: errPathIssue.Error(),
 		},
 		{
 			name: "should return error if file provided is directory",
@@ -86,7 +86,7 @@ func Test_process(t *testing.T) {
 				file:   "./tests",
 			},
 			wantErr:     true,
-			errExpected: errNotAFile,
+			errExpected: errNotAFile.Error(),
 		},
 		{
 			name: "should return the test details in a file",
@@ -133,6 +133,14 @@ Flags:
   -h, --help          help for gotest-ls
   -p, --pretty        Pretty print the output in JSON formatnull`,
 		},
+		{
+			name: "return error if directory does not exist",
+			args: args{
+				dirs: []string{"./dead-tests"},
+			},
+			wantErr:     true,
+			errExpected: errUnknown.Error() + ": lstat ./dead-tests: no such file or directory",
+		},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -144,7 +152,7 @@ Flags:
 
 			if tt.wantErr {
 				require.Error(t, err)
-				require.Equal(t, tt.errExpected, err)
+				require.Equal(t, tt.errExpected, err.Error())
 			} else {
 				require.NoError(t, err)
 			}

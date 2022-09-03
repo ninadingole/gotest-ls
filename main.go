@@ -143,6 +143,10 @@ func loadFiles(dirs []string) ([]string, error) {
 
 	for _, dir := range dirs {
 		err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+
 			if !d.IsDir() && filepath.Ext(path) == ".go" && strings.HasSuffix(path, "_test.go") {
 				testFiles = append(testFiles, path)
 			}
