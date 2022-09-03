@@ -76,6 +76,8 @@ type args struct {
 func Process(proc *args, writer io.Writer) error {
 	if requiresHelp(proc) {
 		_ = printHelpText(writer)
+
+		return nil
 	}
 
 	if err := validateArgs(proc); err != nil {
@@ -94,6 +96,12 @@ func Process(proc *args, writer io.Writer) error {
 	tests, err := listTests(files)
 	if err != nil {
 		return err
+	}
+
+	if len(tests) == 0 {
+		_, _ = writer.Write([]byte("No tests found"))
+
+		return nil
 	}
 
 	marshal, err := json.Marshal(tests)

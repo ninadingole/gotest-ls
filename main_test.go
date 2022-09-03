@@ -131,15 +131,23 @@ Examples:
 Flags:
   -f, --file string   Path to a file, cannot be used with directories
   -h, --help          help for gotest-ls
-  -p, --pretty        Pretty print the output in JSON formatnull`,
+  -p, --pretty        Pretty print the output in JSON format`,
 		},
 		{
 			name: "return error if directory does not exist",
 			args: args{
-				dirs: []string{"./dead-tests"},
+				dirs: []string{"./false-directory"},
 			},
 			wantErr:     true,
-			errExpected: errUnknown.Error() + ": lstat ./dead-tests: no such file or directory",
+			errExpected: errUnknown.Error() + ": lstat ./false-directory: no such file or directory",
+		},
+		{
+			name: "return error if there is no test in the directory",
+			args: args{
+				dirs: []string{"./dead-tests"},
+			},
+			expected: "No tests found",
+			wantErr:  false,
 		},
 	}
 	for _, tt := range tests {
