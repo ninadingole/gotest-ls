@@ -47,5 +47,6 @@ jobs:
         if: matrix.go == env.GO_VERSION
         uses: codecov/codecov-action@v3
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.out
           flags: unittests-${{ matrix.os }}
