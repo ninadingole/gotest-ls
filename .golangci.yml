@@ -1,0 +1,33 @@
+run:
+  concurrency: 4
+
+  skip-dirs:
+    - vendor
+    - .git
+    - .github
+    - .idea
+
+linters:
+  enable-all: true
+  disable:
+    - forbidigo
+    - gochecknoglobals
+    - wrapcheck
+    - ifshort
+    - exhaustivestruct
+    - golint
+    - scopelint
+    - interfacer
+    - maligned
+    - nosnakecase
+
+linters-settings:
+  cyclop:
+    max-complexity: 15
+
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - lll
