@@ -31,3 +31,6 @@ issues:
     - path: _test\.go
       linters:
         - lll
+        - exhaustruct
+        - varnamelen
+        - funlen
