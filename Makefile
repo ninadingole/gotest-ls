@@ -13,6 +13,10 @@ GOLANGCI_LINT ?= golangci-lint-$(GOLANGCI_LINT_VERSION)
 .PHONY: all
 all: deps test build
 
+clean:
+	@echo "$(OK_COLOR)==> Cleaning... $(NO_COLOR)"
+	@rm -rf $(BINDIR)
+
 .PHONY: deps
 deps:
 	$(GO) mod vendor -v
