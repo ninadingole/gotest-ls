@@ -1,4 +1,4 @@
-module github.com/ninadingole/go-test-ls
+module github.com/ninadingole/gotest-ls
 
 go 1.19
 
