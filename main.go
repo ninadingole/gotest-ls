@@ -33,6 +33,9 @@ var (
 
 	// errNotAFile is the error message when the user provides a directory as a file.
 	errNotAFile = errors.New("ERROR: required file, provided directory")
+
+	// errUnknown is the error message when the error is not an expected type.
+	errUnknown = errors.New("ERROR: unknown error")
 )
 
 // Detail is a struct that contains the details of a test.
@@ -48,57 +51,96 @@ type Detail struct {
 func main() {
 	flag.Parse()
 
-	if requiresHelp() {
+	_, err := Process(&args{
+		file:   *file,
+		dirs:   flag.Args(),
+		help:   *help,
+		pretty: *pretty,
+	})
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+}
+
+// args is a struct that contains the arguments provided by the user.
+type args struct {
+	file   string
+	dirs   []string
+	help   bool
+	pretty bool
+}
+
+// Process is the main function that processes the arguments and prints the output.
+func Process(proc *args) ([]Detail, error) {
+	if requiresHelp(proc) {
 		printHelpText()
-		os.Exit(0)
 	}
 
-	tests, err := listTests(loadFiles(*file, flag.Args()))
+	if err := validateArgs(proc); err != nil {
+		return nil, err
+	}
+
+	if proc.file != "" {
+		proc.dirs = append(proc.dirs, proc.file)
+	}
+
+	files, err := loadFiles(proc.dirs)
 	if err != nil {
-		panic(err)
+		return nil, err
+	}
+
+	tests, err := listTests(files)
+	if err != nil {
+		return nil, err
 	}
 
 	marshal, err := json.Marshal(tests)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("%s: %w", errUnknown, err)
 	}
 
-	if *pretty {
-		prettyPrint(marshal)
+	if proc.pretty {
+		if err := prettyPrint(marshal); err != nil {
+			return nil, err
+		}
 	} else {
 		fmt.Println(string(marshal))
 	}
+
+	return tests, nil
 }
 
-// requiresHelp checks if the user has requested help and not provided any required arguments.
-func requiresHelp() bool {
-	return (len(flag.Args()) == 0 && *file == "") || *help
-}
-
-// loadFiles loads all the go files in the given paths.
-func loadFiles(file string, args []string) []string {
-	if file != "" && len(args) > 0 {
-		fmt.Println(errPathIssue)
-		os.Exit(1)
+// validateArgs validates the arguments provided by the user.
+func validateArgs(args *args) error {
+	if args.file != "" && len(args.dirs) > 0 {
+		return errPathIssue
 	}
 
-	if file != "" {
-		stat, err := os.Stat(file)
+	if args.file != "" {
+		stat, err := os.Stat(args.file)
 		if err != nil {
-			panic(err)
+			return fmt.Errorf("%s: %w", errUnknown, err)
 		}
 
 		if stat.IsDir() {
-			fmt.Println(errNotAFile)
-			os.Exit(1)
+			return errNotAFile
 		}
-
-		return []string{file}
 	}
 
+	return nil
+}
+
+// requiresHelp checks if the user has requested help and not provided any required arguments.
+func requiresHelp(proc *args) bool {
+	return (len(proc.dirs) == 0 && proc.file == "") || proc.help
+}
+
+// loadFiles loads all the go files in the given paths.
+func loadFiles(dirs []string) ([]string, error) {
 	var testFiles []string
 
-	for _, dir := range args {
+	for _, dir := range dirs {
 		err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 			if !d.IsDir() && filepath.Ext(path) == ".go" && strings.HasSuffix(path, "_test.go") {
 				testFiles = append(testFiles, path)
@@ -107,11 +149,11 @@ func loadFiles(file string, args []string) []string {
 			return nil
 		})
 		if err != nil {
-			panic(err)
+			return nil, fmt.Errorf("%s: %w", errUnknown, err)
 		}
 	}
 
-	return testFiles
+	return testFiles, nil
 }
 
 // listTests lists all the tests in the given go test files.
@@ -121,7 +163,7 @@ func listTests(files []string) ([]Detail, error) {
 	for _, testFile := range files {
 		fileAbsPath, err := filepath.Abs(testFile)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%s: %w", errUnknown, err)
 		}
 
 		fileName := filepath.Base(testFile)
@@ -130,7 +172,7 @@ func listTests(files []string) ([]Detail, error) {
 
 		parseFile, err := parser.ParseFile(set, testFile, nil, parser.ParseComments)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%s: %w", errUnknown, err)
 		}
 
 		for _, obj := range parseFile.Scope.Objects {
@@ -160,15 +202,17 @@ func listTests(files []string) ([]Detail, error) {
 }
 
 // prettyPrint prints the given json in a pretty format.
-func prettyPrint(data []byte) {
+func prettyPrint(data []byte) error {
 	var prettyJSON bytes.Buffer
 
 	err := json.Indent(&prettyJSON, data, "", "\t")
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("%s: %w", errUnknown, err)
 	}
 
 	fmt.Println(prettyJSON.String())
+
+	return nil
 }
 
 // printHelpText prints the help text for the program.
