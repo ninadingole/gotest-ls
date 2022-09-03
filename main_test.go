@@ -95,7 +95,7 @@ func Test_process(t *testing.T) {
 				pretty: false,
 				file:   "./tests/sample_test.go",
 			},
-			expected: fmt.Sprintf(`[{"name":"TestSomething","fileName":"sample_test.go","relativePath":"./tests/sample_test.go","absolutePath":"%s/tests/sample_test.go","line":7,"pos":49}]`, pwd),
+			expected: fmt.Sprintf(`[{"name":"TestSomething","fileName":"sample_test.go","relativePath":"sample_test.go","absolutePath":"%s/tests/sample_test.go","line":7,"pos":49}]`, pwd),
 		},
 		{
 			name: "should return the test details in a file with pretty flag",
@@ -107,7 +107,7 @@ func Test_process(t *testing.T) {
 	{
 		"name": "TestSomething",
 		"fileName": "sample_test.go",
-		"relativePath": "./tests/sample_test.go",
+		"relativePath": "sample_test.go",
 		"absolutePath": "%s/tests/sample_test.go",
 		"line": 7,
 		"pos": 49
