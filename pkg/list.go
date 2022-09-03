@@ -43,8 +43,8 @@ func List(dirs []string) ([]TestDetail, error) {
 }
 
 // loadFiles loads all the go files in the given paths.
-func loadFiles(dirs []string) ([]string, error) {
-	var testFiles []string
+func loadFiles(dirs []string) (map[string][]string, error) {
+	testFiles := make(map[string][]string)
 
 	for _, dir := range dirs {
 		err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
@@ -53,7 +53,7 @@ func loadFiles(dirs []string) ([]string, error) {
 			}
 
 			if !d.IsDir() && filepath.Ext(path) == ".go" && strings.HasSuffix(path, "_test.go") {
-				testFiles = append(testFiles, path)
+				testFiles[dir] = append(testFiles[dir], path)
 			}
 
 			return nil
@@ -67,37 +67,44 @@ func loadFiles(dirs []string) ([]string, error) {
 }
 
 // listTests lists all the tests in the given go test files.
-func listTests(files []string) ([]TestDetail, error) {
+func listTests(files map[string][]string) ([]TestDetail, error) {
 	var tests []TestDetail
 
-	for _, testFile := range files {
-		fileAbsPath, err := filepath.Abs(testFile)
-		if err != nil {
-			return nil, err
-		}
+	for dir, testFiles := range files {
+		for _, testFile := range testFiles {
+			fileAbsPath, err := filepath.Abs(testFile)
+			if err != nil {
+				return nil, err
+			}
 
-		fileName := filepath.Base(testFile)
+			fileName := filepath.Base(testFile)
 
-		set := token.NewFileSet()
+			relativePath, err := filepath.Rel(filepath.Dir(dir), testFile)
+			if err != nil {
+				return nil, err
+			}
 
-		parseFile, err := parser.ParseFile(set, testFile, nil, parser.ParseComments)
-		if err != nil {
-			return nil, err
-		}
+			set := token.NewFileSet()
 
-		for _, obj := range parseFile.Scope.Objects {
-			if obj.Kind == ast.Fun {
-				if strings.HasPrefix(obj.Name, "Test") ||
-					strings.HasPrefix(obj.Name, "Example") ||
-					strings.HasPrefix(obj.Name, "Benchmark") {
-					tests = append(tests, TestDetail{
-						Name:         obj.Name,
-						Pos:          obj.Pos(),
-						Line:         set.Position(obj.Pos()).Line,
-						FileName:     fileName,
-						RelativePath: testFile,
-						AbsolutePath: fileAbsPath,
-					})
+			parseFile, err := parser.ParseFile(set, testFile, nil, parser.ParseComments)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, obj := range parseFile.Scope.Objects {
+				if obj.Kind == ast.Fun {
+					if strings.HasPrefix(obj.Name, "Test") ||
+						strings.HasPrefix(obj.Name, "Example") ||
+						strings.HasPrefix(obj.Name, "Benchmark") {
+						tests = append(tests, TestDetail{
+							Name:         obj.Name,
+							Pos:          obj.Pos(),
+							Line:         set.Position(obj.Pos()).Line,
+							FileName:     fileName,
+							RelativePath: relativePath,
+							AbsolutePath: fileAbsPath,
+						})
+					}
 				}
 			}
 		}
