@@ -35,3 +35,60 @@ gotest-ls -p -f ./pkg/random_test.go
   -f, --file    string      file to list tests from
   -p, --pretty  bool        pretty print the json output
 ```
+
+### Output
+
+```bash
+$> gotest-ls -p .                        
+[
+        {
+                "name": "BenchmarkSomething",
+                "fileName": "sample_test.go",
+                "relativePath": "tests/sample_test.go",
+                "absolutePath": "www/gotest-ls/tests/sample_test.go",
+                "line": 14,
+                "pos": 156
+        },
+        {
+                "name": "Example_errorIfFileAndDirectoryBothAreProvided",
+                "fileName": "main_test.go",
+                "relativePath": "main_test.go",
+                "absolutePath": "www/gotest-ls/main_test.go",
+                "line": 37,
+                "pos": 1090
+        },
+        {
+                "name": "Example_errorIfFileProvidedIsDirectory",
+                "fileName": "main_test.go",
+                "relativePath": "main_test.go",
+                "absolutePath": "www/gotest-ls/main_test.go",
+                "line": 49,
+                "pos": 1419
+        },
+        {
+                "name": "Example_something",
+                "fileName": "sample_test.go",
+                "relativePath": "tests/sample_test.go",
+                "absolutePath": "www/gotest-ls/tests/sample_test.go",
+                "line": 20,
+                "pos": 250
+        },
+        {
+                "name": "TestListAllTestsForGivenFile",
+                "fileName": "main_test.go",
+                "relativePath": "main_test.go",
+                "absolutePath": "www/gotest-ls/main_test.go",
+                "line": 14,
+                "pos": 126
+        },
+        {
+                "name": "TestSomething",
+                "fileName": "sample_test.go",
+                "relativePath": "tests/sample_test.go",
+                "absolutePath": "www/gotest-ls/tests/sample_test.go",
+                "line": 8,
+                "pos": 56
+        }
+]
+
+```
