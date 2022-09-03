@@ -15,7 +15,7 @@ The tool provides output in JSON format. The output can be used to generate a re
 ### Installation
 
 ```bash
-go get -u github.com/ninadingole/gotest-ls
+go install github.com/ninadingole/gotest-ls
 ```
 
 ### Usage
