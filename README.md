@@ -43,55 +43,87 @@ gotest-ls -p -f ./pkg/random_test.go
 
 ```bash
 $> gotest-ls -p .                        
+
 [
         {
                 "name": "BenchmarkSomething",
-                "fileName": "sample_test.go",
-                "relativePath": "tests/sample_test.go",
-                "absolutePath": "www/gotest-ls/tests/sample_test.go",
-                "line": 14,
-                "pos": 156
+                "fileName": "benchmark_test.go",
+                "relativePath": "benchmark_test.go",
+                "absolutePath": "/Users/neenadingole/opensource/gotest-ls/tests/benchmark_test.go",
+                "line": 5,
+                "pos": 44
         },
         {
                 "name": "Example_errorIfFileAndDirectoryBothAreProvided",
                 "fileName": "main_test.go",
                 "relativePath": "main_test.go",
-                "absolutePath": "www/gotest-ls/main_test.go",
-                "line": 37,
-                "pos": 1090
+                "absolutePath": "/Users/neenadingole/opensource/gotest-ls/main_test.go",
+                "line": 36,
+                "pos": 2006
         },
         {
                 "name": "Example_errorIfFileProvidedIsDirectory",
                 "fileName": "main_test.go",
                 "relativePath": "main_test.go",
-                "absolutePath": "www/gotest-ls/main_test.go",
-                "line": 49,
-                "pos": 1419
+                "absolutePath": "/Users/neenadingole/opensource/gotest-ls/main_test.go",
+                "line": 48,
+                "pos": 2335
         },
         {
                 "name": "Example_something",
-                "fileName": "sample_test.go",
-                "relativePath": "tests/sample_test.go",
-                "absolutePath": "www/gotest-ls/tests/sample_test.go",
-                "line": 20,
-                "pos": 250
+                "fileName": "example_test.go",
+                "relativePath": "example_test.go",
+                "absolutePath": "/Users/neenadingole/opensource/gotest-ls/tests/example_test.go",
+                "line": 5,
+                "pos": 40
+        },
+        {
+                "name": "Test",
+                "fileName": "table_test.go",
+                "relativePath": "table_test.go",
+                "absolutePath": "/Users/neenadingole/opensource/gotest-ls/tests/table_test.go",
+                "line": 7,
+                "pos": 49
         },
         {
                 "name": "TestListAllTestsForGivenFile",
                 "fileName": "main_test.go",
                 "relativePath": "main_test.go",
-                "absolutePath": "www/gotest-ls/main_test.go",
+                "absolutePath": "/Users/neenadingole/opensource/gotest-ls/main_test.go",
                 "line": 14,
-                "pos": 126
+                "pos": 127
         },
         {
                 "name": "TestSomething",
                 "fileName": "sample_test.go",
-                "relativePath": "tests/sample_test.go",
-                "absolutePath": "www/gotest-ls/tests/sample_test.go",
-                "line": 8,
-                "pos": 56
+                "relativePath": "sample_test.go",
+                "absolutePath": "/Users/neenadingole/opensource/gotest-ls/tests/sample_test.go",
+                "line": 7,
+                "pos": 49
+        },
+        {
+                "name": "Test_List",
+                "fileName": "list_test.go",
+                "relativePath": "list_test.go",
+                "absolutePath": "/Users/neenadingole/opensource/gotest-ls/pkg/list_test.go",
+                "line": 12,
+                "pos": 140
+        },
+        {
+                "name": "Test_process",
+                "fileName": "main_test.go",
+                "relativePath": "main_test.go",
+                "absolutePath": "/Users/neenadingole/opensource/gotest-ls/main_test.go",
+                "line": 60,
+                "pos": 2621
+        },
+        {
+                "name": "Test_subTestPattern",
+                "fileName": "subtest_test.go",
+                "relativePath": "subtest_test.go",
+                "absolutePath": "/Users/neenadingole/opensource/gotest-ls/tests/subtest_test.go",
+                "line": 5,
+                "pos": 44
         }
 ]
-
 ```
