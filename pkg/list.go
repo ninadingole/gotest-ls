@@ -83,7 +83,7 @@ func loadFiles(dirs []string) (map[string][]string, error) {
 }
 
 // listTests lists all the tests in the given go test files.
-func listTests(files map[string][]string) ([]TestDetail, error) {
+func listTests(files map[string][]string) ([]TestDetail, error) { //nolint: gocognit
 	var tests []TestDetail
 
 	for dir, testFiles := range files {

@@ -26,7 +26,7 @@ linters:
 
 linters-settings:
   cyclop:
-    max-complexity: 15
+    max-complexity: 18
   varnamelen:
     min-name-length: 1
   nestif:
