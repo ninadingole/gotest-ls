@@ -104,10 +104,10 @@ func Test_List(t *testing.T) {
 func generateFakeFiles(t *testing.T, dir string) {
 	t.Helper()
 
-	_ = os.Mkdir(dir+"/dummy", 0o600)
-	_ = os.Mkdir(dir+"/sample", 0o600)
+	_ = os.Mkdir(dir+"/dummy", os.ModePerm)
+	_ = os.Mkdir(dir+"/sample", os.ModePerm)
 
-	//nolint:dupword
+	//nolint:dupword, gosec
 	err := os.WriteFile(dir+"/dummy/dummy_test.go", []byte(`package tests_test 
 
 import (
@@ -115,9 +115,10 @@ import (
 )
 
 dummy dummy test
-`), 0o600)
+`), 0o700)
 	require.NoError(t, err)
 
+	//nolint:gosec
 	err = os.WriteFile(dir+"/sample/sample_test.go", []byte(`
 
 package tests_test
@@ -132,7 +133,7 @@ func TestSomething(t *testing.T) {
 	t.Log("Hello, world!")
 }
 
-`), 0o600)
+`), os.ModePerm)
 
 	require.NoError(t, err)
 }
