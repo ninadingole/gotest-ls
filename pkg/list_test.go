@@ -71,6 +71,20 @@ func Test_List(t *testing.T) {
 			fileOrDirs: []string{"../tests/table_test.go"},
 			want:       expected,
 		},
+		{
+			name:       "parse fuzz tests correctly",
+			fileOrDirs: []string{"../tests/fuzz_test.go"},
+			want: []pkg.TestDetail{
+				{
+					Name:         "Fuzz_Sample",
+					FileName:     "fuzz_test.go",
+					RelativePath: "fuzz_test.go",
+					AbsolutePath: fmt.Sprintf("%s/tests/fuzz_test.go", parentDir),
+					Line:         5,
+					Pos:          39,
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		tt := tt

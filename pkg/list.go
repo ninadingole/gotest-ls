@@ -90,51 +90,58 @@ func listTests(files map[string][]string) ([]TestDetail, error) { //nolint: goco
 		for _, testFile := range testFiles {
 			set := token.NewFileSet()
 
-			parseFile, err := parser.ParseFile(set, testFile, nil, parser.ParseComments)
+			parseFile, err := parser.ParseFile(set, testFile, nil, parser.AllErrors)
 			if err != nil {
 				return nil, err
 			}
 
-			for _, obj := range parseFile.Scope.Objects {
-				if obj.Kind == ast.Fun {
-					if isGolangTest(obj) {
-						isSubTest := false
+			ast.Inspect(parseFile, func(n ast.Node) bool {
+				fnDecl, ok := n.(*ast.FuncDecl)
+				if !ok {
+					return true
+				}
 
-						if fnDecl, ok := obj.Decl.(*ast.FuncDecl); ok {
-							for i, v := range fnDecl.Body.List {
-								switch identifyTestType(v) {
-								case testTypeSubTest:
-									isSubTest = true
+				if !isGolangTest(fnDecl) {
+					return false
+				}
+				isSubTest := false
+				isParallel := false
 
-									if test := findSubTestName(v); test != nil {
-										tests = append(tests, buildTestDetail(obj, test.name, dir, testFile, set, test.pos))
+				for i, v := range fnDecl.Body.List {
+					if !isParallel {
+						isParallel = isParallelTest(v)
+					}
+					switch identifyTestType(v) {
+					case testTypeSubTest:
+						isSubTest = true
+
+						if test := findSubTestName(v); test != nil {
+							tests = append(tests, buildTestDetail(fnDecl.Name.String(), test.name, dir, testFile, set, test.pos))
+						}
+
+					case testTypeTableTest:
+						isSubTest = true
+						testNameFieldInStruct := findTableTestNameField(v)
+
+						if testNameFieldInStruct != "" {
+							for j := i; j > 0; j-- {
+								if ttDetails := parseTableTestStructsIfAny(fnDecl.Body.List[j], testNameFieldInStruct); ttDetails != nil {
+									for _, ttDetail := range ttDetails {
+										tests = append(tests, buildTestDetail(fnDecl.Name.String(), ttDetail.name, dir, testFile, set, ttDetail.pos))
 									}
-
-								case testTypeTableTest:
-									isSubTest = true
-									testNameFieldInStruct := findTableTestNameField(v)
-
-									if testNameFieldInStruct != "" {
-										for j := i; j > 0; j-- {
-											if ttDetails := parseTableTestStructsIfAny(fnDecl.Body.List[j], testNameFieldInStruct); ttDetails != nil {
-												for _, ttDetail := range ttDetails {
-													tests = append(tests, buildTestDetail(obj, ttDetail.name, dir, testFile, set, ttDetail.pos))
-												}
-											}
-										}
-									}
-								case testTypeNone:
-									continue
 								}
 							}
 						}
-
-						if !isSubTest {
-							tests = append(tests, buildTestDetail(obj, "", dir, testFile, set, obj.Pos()))
-						}
+					case testTypeNone:
+						continue
 					}
 				}
-			}
+				if !isSubTest {
+					tests = append(tests, buildTestDetail(fnDecl.Name.String(), "", dir, testFile, set, fnDecl.Name.Pos()))
+				}
+
+				return true
+			})
 		}
 	}
 
@@ -146,13 +153,40 @@ func listTests(files map[string][]string) ([]TestDetail, error) { //nolint: goco
 	return tests, nil
 }
 
+func isParallelTest(v ast.Stmt) bool {
+	exprStmt, ok := v.(*ast.ExprStmt)
+	if !ok {
+		return false
+	}
+
+	callExpr, ok := exprStmt.X.(*ast.CallExpr)
+	if !ok {
+		return false
+	}
+
+	if selectorExpr, ok := callExpr.Fun.(*ast.SelectorExpr); ok {
+		if selectorExpr.Sel.Name == "Parallel" {
+			return true
+		}
+	}
+
+	return false
+}
+
 // isGolangTest checks if the function name starts with golang test standards
-// it checks for `Test`, `Example` or `Benchmark` prefixes in a function name.
+// it checks for `Test`, `Example`, `Benchmark` or `Fuzz` prefixes in a function name.
 // Other than test functions all the other functions are ignored.
-func isGolangTest(obj *ast.Object) bool {
-	return strings.HasPrefix(obj.Name, "Test") ||
-		strings.HasPrefix(obj.Name, "Example") ||
-		strings.HasPrefix(obj.Name, "Benchmark")
+func isGolangTest(obj *ast.FuncDecl) bool {
+	name := obj.Name.String()
+	testPrefixes := []string{"Test", "Example", "Benchmark", "Fuzz"}
+
+	for _, prefix := range testPrefixes {
+		if strings.HasPrefix(name, prefix) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // identifyTestType identifies the type of the test based on the given ast node.
@@ -160,7 +194,8 @@ func isGolangTest(obj *ast.Object) bool {
 // testTypeSubTest. If the test contains table tests then it returns testTypeTableTest.
 // Otherwise, it returns testTypeNone.
 func identifyTestType(v ast.Stmt) testType {
-	if expr, ok := v.(*ast.ExprStmt); ok {
+	switch expr := v.(type) {
+	case *ast.ExprStmt:
 		if callExpr, ok := expr.X.(*ast.CallExpr); ok {
 			if selectorExpr, ok := callExpr.Fun.(*ast.SelectorExpr); ok {
 				if selectorExpr.Sel.Name == "Run" {
@@ -168,9 +203,7 @@ func identifyTestType(v ast.Stmt) testType {
 				}
 			}
 		}
-	}
-
-	if expr, ok := v.(*ast.RangeStmt); ok {
+	case *ast.RangeStmt:
 		for _, v := range expr.Body.List {
 			if typ := identifyTestType(v); typ == testTypeSubTest {
 				return testTypeTableTest
@@ -202,14 +235,21 @@ func identifyTestType(v ast.Stmt) testType {
 //		})
 //	}
 func findSubTestName(v ast.Stmt) *subTestDetail {
-	if expr, ok := v.(*ast.ExprStmt); ok {
-		if callExpr, ok := expr.X.(*ast.CallExpr); ok {
-			if basic, ok := callExpr.Args[0].(*ast.BasicLit); ok {
-				return &subTestDetail{
-					name: basic.Value,
-					pos:  callExpr.Pos(),
-				}
-			}
+
+	expr, ok := v.(*ast.ExprStmt)
+	if !ok {
+		return nil
+	}
+
+	callExpr, ok := expr.X.(*ast.CallExpr)
+	if !ok {
+		return nil
+	}
+
+	if basic, ok := callExpr.Args[0].(*ast.BasicLit); ok {
+		return &subTestDetail{
+			name: basic.Value,
+			pos:  callExpr.Pos(),
 		}
 	}
 
@@ -217,14 +257,7 @@ func findSubTestName(v ast.Stmt) *subTestDetail {
 }
 
 // buildTestDetail returns the TestDetail object with the information received from the given parameters.
-func buildTestDetail(
-	obj *ast.Object,
-	name string,
-	dir string,
-	file string,
-	set *token.FileSet,
-	pos token.Pos,
-) TestDetail {
+func buildTestDetail(parent string, subTest string, dir string, file string, set *token.FileSet, pos token.Pos) TestDetail {
 	fileAbsPath, err := filepath.Abs(file)
 	if err != nil {
 		panic(fmt.Errorf("failed to get absolute path of file %s: %w", file, err))
@@ -238,7 +271,7 @@ func buildTestDetail(
 	}
 
 	detail := TestDetail{
-		Name:         obj.Name,
+		Name:         parent,
 		FileName:     fileName,
 		RelativePath: relativePath,
 		AbsolutePath: fileAbsPath,
@@ -246,9 +279,9 @@ func buildTestDetail(
 		Pos:          pos,
 	}
 
-	if name != "" {
-		detail.Name = fmt.Sprintf("%s/%s", obj.Name,
-			strings.ReplaceAll(strings.ReplaceAll(name, "\"", ""), " ", "_"))
+	if subTest != "" {
+		detail.Name = fmt.Sprintf("%s/%s", parent,
+			strings.ReplaceAll(strings.ReplaceAll(subTest, "\"", ""), " ", "_"))
 	}
 
 	return detail
@@ -270,22 +303,38 @@ func buildTestDetail(
 //			})
 //		}
 func findTableTestNameField(v ast.Stmt) string {
-	if rangeStmt, ok := v.(*ast.RangeStmt); ok {
-		for _, stmt := range rangeStmt.Body.List {
-			if exprStmt, ok := stmt.(*ast.ExprStmt); ok {
-				if callExpr, ok := exprStmt.X.(*ast.CallExpr); ok {
-					if selectorExpr, ok := callExpr.Fun.(*ast.SelectorExpr); ok {
-						if ident, ok := selectorExpr.X.(*ast.Ident); ok {
-							if ident.Name == "t" && selectorExpr.Sel.Name == "Run" {
-								if sExpr, ok := callExpr.Args[0].(*ast.SelectorExpr); ok {
-									return strings.ReplaceAll(sExpr.Sel.Name, "\"", "")
-								}
-							}
-						}
-					}
-				}
+	rangeStmt, ok := v.(*ast.RangeStmt)
+	if !ok {
+		return ""
+	}
+
+	if len(rangeStmt.Body.List) == 0 {
+		return ""
+	}
+
+	for _, stmt := range rangeStmt.Body.List {
+		exprStmt, ok := stmt.(*ast.ExprStmt)
+		if !ok {
+			continue
+		}
+		callExpr, ok := exprStmt.X.(*ast.CallExpr)
+		if !ok {
+			continue
+		}
+		selectorExpr, ok := callExpr.Fun.(*ast.SelectorExpr)
+		if !ok {
+			continue
+		}
+		ident, ok := selectorExpr.X.(*ast.Ident)
+		if !ok {
+			continue
+		}
+		if ident.Name == "t" && selectorExpr.Sel.Name == "Run" {
+			if sExpr, ok := callExpr.Args[0].(*ast.SelectorExpr); ok {
+				return strings.ReplaceAll(sExpr.Sel.Name, "\"", "")
 			}
 		}
+
 	}
 
 	return ""
@@ -296,28 +345,40 @@ func findTableTestNameField(v ast.Stmt) string {
 func parseTableTestStructsIfAny(v ast.Stmt, fieldName string) []subTestDetail {
 	var values []subTestDetail
 
-	if assignStmt, ok := v.(*ast.AssignStmt); ok {
-		for _, expr := range assignStmt.Rhs {
-			if cmpsLit, ok := expr.(*ast.CompositeLit); ok {
-				for _, elt := range cmpsLit.Elts {
-					if compositeLit, ok := elt.(*ast.CompositeLit); ok {
-						for _, elt := range compositeLit.Elts {
-							if kvExpr, ok := elt.(*ast.KeyValueExpr); ok {
-								if key, ok := kvExpr.Key.(*ast.Ident); ok {
-									if key.Name == fieldName {
-										if value, ok := kvExpr.Value.(*ast.BasicLit); ok {
-											values = append(values,
-												subTestDetail{
-													name: value.Value,
-													pos:  key.Pos(),
-												})
-										}
-									}
-								}
-							}
-						}
+	assignStmt, ok := v.(*ast.AssignStmt)
+	if !ok {
+		return nil
+	}
+	for _, expr := range assignStmt.Rhs {
+		cmpsLit, ok := expr.(*ast.CompositeLit)
+		if !ok {
+			continue
+		}
+		for _, elt := range cmpsLit.Elts {
+			compositeLit, ok := elt.(*ast.CompositeLit)
+			if !ok {
+				continue
+			}
+			for _, elt := range compositeLit.Elts {
+				kvExpr, ok := elt.(*ast.KeyValueExpr)
+				if !ok {
+					continue
+				}
+				key, ok := kvExpr.Key.(*ast.Ident)
+				if !ok {
+					continue
+				}
+				
+				if key.Name == fieldName {
+					if value, ok := kvExpr.Value.(*ast.BasicLit); ok {
+						values = append(values,
+							subTestDetail{
+								name: value.Value,
+								pos:  key.Pos(),
+							})
 					}
 				}
+
 			}
 		}
 	}
