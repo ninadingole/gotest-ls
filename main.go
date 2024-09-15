@@ -29,9 +29,6 @@ var (
 
 	// errNotAFile is the error message when the user provides a directory as a file.
 	errNotAFile = errors.New("ERROR: required file, provided directory")
-
-	// errUnknown is the error message when the error is not an expected type.
-	errUnknown = errors.New("ERROR: unknown error")
 )
 
 func main() {
@@ -76,7 +73,7 @@ func Process(proc *args, writer io.Writer) error {
 
 	tests, err := pkg.List(proc.dirs)
 	if err != nil {
-		return fmt.Errorf("%w: %w", errUnknown, err)
+		return fmt.Errorf("failed to list the tests: %w", err)
 	}
 
 	if len(tests) == 0 {
@@ -87,7 +84,7 @@ func Process(proc *args, writer io.Writer) error {
 
 	marshal, err := json.Marshal(tests)
 	if err != nil {
-		return fmt.Errorf("%w: %w", errUnknown, err)
+		return fmt.Errorf("failed to marshal json: %w", err)
 	}
 
 	if proc.pretty {
@@ -110,7 +107,7 @@ func validateArgs(args *args) error {
 	if args.file != "" {
 		stat, err := os.Stat(args.file)
 		if err != nil {
-			return fmt.Errorf("%w: %w", errUnknown, err)
+			return fmt.Errorf("failed to get file stat: %w", err)
 		}
 
 		if stat.IsDir() {
@@ -132,7 +129,7 @@ func prettyPrint(data []byte, writer io.Writer) error {
 
 	err := json.Indent(&prettyJSON, data, "", "\t")
 	if err != nil {
-		return fmt.Errorf("%w: %w", errUnknown, err)
+		return fmt.Errorf("failed to prettify output: %w", err)
 	}
 
 	_, err = writer.Write(prettyJSON.Bytes())

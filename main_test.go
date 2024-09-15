@@ -166,7 +166,7 @@ Flags:
 				dirs: []string{"./false-directory"},
 			},
 			wantErr:     true,
-			errExpected: errUnknown.Error() + ": lstat ./false-directory: no such file or directory",
+			errExpected: "failed to list the tests: lstat ./false-directory: no such file or directory",
 		},
 		{
 			name: "return error if there is no test in the directory",
