@@ -90,7 +90,7 @@ func listTests(files map[string][]string) ([]TestDetail, error) { //nolint: goco
 		for _, testFile := range testFiles {
 			set := token.NewFileSet()
 
-			parseFile, err := parser.ParseFile(set, testFile, nil, parser.AllErrors)
+			parseFile, err := parser.ParseFile(set, testFile, nil, parser.SkipObjectResolution)
 			if err != nil {
 				return nil, err
 			}

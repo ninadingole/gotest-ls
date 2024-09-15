@@ -80,7 +80,7 @@ func Test_List(t *testing.T) {
 					RelativePath: "fuzz_test.go",
 					AbsolutePath: parentDir + "/tests/fuzz_test.go",
 					Line:         5,
-					Pos:          39,
+					Pos:          44,
 				},
 			},
 		},
@@ -119,9 +119,7 @@ dummy dummy test
 	require.NoError(t, err)
 
 	//nolint:gosec
-	err = os.WriteFile(dir+"/sample/sample_test.go", []byte(`
-
-package tests_test
+	err = os.WriteFile(dir+"/sample/sample_test.go", []byte(`package tests_test
 
 import (
 	"testing"
@@ -146,7 +144,7 @@ var (
 			Name:         "Test/5_+_5_=_10",
 			FileName:     "table_test.go",
 			RelativePath: "table_test.go",
-			AbsolutePath: parentDir + "%s/tests/table_test.go",
+			AbsolutePath: parentDir + "/tests/table_test.go",
 			Line:         23,
 			Pos:          265,
 		},
@@ -154,7 +152,7 @@ var (
 			Name:         "Test/5_-_5_=_0",
 			FileName:     "table_test.go",
 			RelativePath: "table_test.go",
-			AbsolutePath: parentDir + "%s/tests/table_test.go",
+			AbsolutePath: parentDir + "/tests/table_test.go",
 			Line:         30,
 			Pos:          355,
 		},
@@ -162,7 +160,7 @@ var (
 			Name:         "Test/mixed_subtest_1",
 			FileName:     "table_test.go",
 			RelativePath: "table_test.go",
-			AbsolutePath: parentDir + "%s/tests/table_test.go",
+			AbsolutePath: parentDir + "/tests/table_test.go",
 			Line:         12,
 			Pos:          111,
 		},
@@ -170,9 +168,9 @@ var (
 			Name:         "Test/mixed_test_2",
 			FileName:     "table_test.go",
 			RelativePath: "table_test.go",
-			AbsolutePath: parentDir + "%s/tests/table_test.go",
-			Line:         48,
-			Pos:          635,
+			AbsolutePath: parentDir + "/tests/table_test.go",
+			Line:         47,
+			Pos:          624,
 		},
 	}
 )
