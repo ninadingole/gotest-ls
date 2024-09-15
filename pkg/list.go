@@ -368,7 +368,7 @@ func parseTableTestStructsIfAny(v ast.Stmt, fieldName string) []subTestDetail {
 				if !ok {
 					continue
 				}
-				
+
 				if key.Name == fieldName {
 					if value, ok := kvExpr.Value.(*ast.BasicLit); ok {
 						values = append(values,
