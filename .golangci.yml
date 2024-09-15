@@ -23,6 +23,7 @@ linters:
     - interfacer
     - maligned
     - nosnakecase
+    - depguard
 
 linters-settings:
   cyclop:

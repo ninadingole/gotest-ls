@@ -83,7 +83,7 @@ func loadFiles(dirs []string) (map[string][]string, error) {
 }
 
 // listTests lists all the tests in the given go test files.
-func listTests(files map[string][]string) ([]TestDetail, error) { //nolint: gocognit
+func listTests(files map[string][]string) ([]TestDetail, error) { //nolint: gocognit,funlen
 	var tests []TestDetail
 
 	for dir, testFiles := range files {
@@ -104,6 +104,7 @@ func listTests(files map[string][]string) ([]TestDetail, error) { //nolint: goco
 				if !isGolangTest(fnDecl) {
 					return false
 				}
+
 				isSubTest := false
 				isParallel := false
 
@@ -111,6 +112,7 @@ func listTests(files map[string][]string) ([]TestDetail, error) { //nolint: goco
 					if !isParallel {
 						isParallel = isParallelTest(v)
 					}
+
 					switch identifyTestType(v) {
 					case testTypeSubTest:
 						isSubTest = true
@@ -136,6 +138,7 @@ func listTests(files map[string][]string) ([]TestDetail, error) { //nolint: goco
 						continue
 					}
 				}
+
 				if !isSubTest {
 					tests = append(tests, buildTestDetail(fnDecl.Name.String(), "", dir, testFile, set, fnDecl.Name.Pos()))
 				}
@@ -235,7 +238,6 @@ func identifyTestType(v ast.Stmt) testType {
 //		})
 //	}
 func findSubTestName(v ast.Stmt) *subTestDetail {
-
 	expr, ok := v.(*ast.ExprStmt)
 	if !ok {
 		return nil
@@ -257,7 +259,14 @@ func findSubTestName(v ast.Stmt) *subTestDetail {
 }
 
 // buildTestDetail returns the TestDetail object with the information received from the given parameters.
-func buildTestDetail(parent string, subTest string, dir string, file string, set *token.FileSet, pos token.Pos) TestDetail {
+func buildTestDetail(
+	parent string,
+	subTest string,
+	dir string,
+	file string,
+	set *token.FileSet,
+	pos token.Pos,
+) TestDetail {
 	fileAbsPath, err := filepath.Abs(file)
 	if err != nil {
 		panic(fmt.Errorf("failed to get absolute path of file %s: %w", file, err))
@@ -293,7 +302,6 @@ func buildTestDetail(parent string, subTest string, dir string, file string, set
 // A typical table test range function would look like this in the source code.
 //
 //	for _, tt := range tests {
-//			tt := tt
 //			t.Run(tt.name, func(t *testing.T) {
 //				t.Parallel()
 //
@@ -317,24 +325,27 @@ func findTableTestNameField(v ast.Stmt) string {
 		if !ok {
 			continue
 		}
+
 		callExpr, ok := exprStmt.X.(*ast.CallExpr)
 		if !ok {
 			continue
 		}
+
 		selectorExpr, ok := callExpr.Fun.(*ast.SelectorExpr)
 		if !ok {
 			continue
 		}
+
 		ident, ok := selectorExpr.X.(*ast.Ident)
 		if !ok {
 			continue
 		}
+
 		if ident.Name == "t" && selectorExpr.Sel.Name == "Run" {
 			if sExpr, ok := callExpr.Args[0].(*ast.SelectorExpr); ok {
 				return strings.ReplaceAll(sExpr.Sel.Name, "\"", "")
 			}
 		}
-
 	}
 
 	return ""
@@ -349,21 +360,25 @@ func parseTableTestStructsIfAny(v ast.Stmt, fieldName string) []subTestDetail {
 	if !ok {
 		return nil
 	}
+
 	for _, expr := range assignStmt.Rhs {
 		cmpsLit, ok := expr.(*ast.CompositeLit)
 		if !ok {
 			continue
 		}
+
 		for _, elt := range cmpsLit.Elts {
 			compositeLit, ok := elt.(*ast.CompositeLit)
 			if !ok {
 				continue
 			}
+
 			for _, elt := range compositeLit.Elts {
 				kvExpr, ok := elt.(*ast.KeyValueExpr)
 				if !ok {
 					continue
 				}
+
 				key, ok := kvExpr.Key.(*ast.Ident)
 				if !ok {
 					continue
@@ -378,7 +393,6 @@ func parseTableTestStructsIfAny(v ast.Stmt, fieldName string) []subTestDetail {
 							})
 					}
 				}
-
 			}
 		}
 	}

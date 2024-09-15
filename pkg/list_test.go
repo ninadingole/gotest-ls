@@ -1,7 +1,6 @@
 package pkg_test
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
@@ -28,13 +27,13 @@ func Test_List(t *testing.T) {
 		},
 		{
 			name:       "single file",
-			fileOrDirs: []string{fmt.Sprintf("%s/sample/sample_test.go", tmpDir)},
+			fileOrDirs: []string{tmpDir + "/sample/sample_test.go"},
 			want: []pkg.TestDetail{
 				{
 					Name:         "TestSomething",
 					FileName:     "sample_test.go",
 					RelativePath: "sample_test.go",
-					AbsolutePath: fmt.Sprintf("%s/sample/sample_test.go", tmpDir),
+					AbsolutePath: tmpDir + "/sample/sample_test.go",
 					Line:         7,
 					Pos:          49,
 				},
@@ -42,13 +41,13 @@ func Test_List(t *testing.T) {
 		},
 		{
 			name:       "single dir",
-			fileOrDirs: []string{fmt.Sprintf("%s/sample", tmpDir)},
+			fileOrDirs: []string{tmpDir + "/sample"},
 			want: []pkg.TestDetail{
 				{
 					Name:         "TestSomething",
 					FileName:     "sample_test.go",
 					RelativePath: "sample/sample_test.go",
-					AbsolutePath: fmt.Sprintf("%s/sample/sample_test.go", tmpDir),
+					AbsolutePath: tmpDir + "/sample/sample_test.go",
 					Line:         7,
 					Pos:          49,
 				},
@@ -62,7 +61,7 @@ func Test_List(t *testing.T) {
 		},
 		{
 			name:       "fail to parse invalid test file",
-			fileOrDirs: []string{fmt.Sprintf("%s/dummy/dummy_test.go", tmpDir)},
+			fileOrDirs: []string{tmpDir + "/dummy/dummy_test.go"},
 			want:       nil,
 			wantErr:    true,
 		},
@@ -79,7 +78,7 @@ func Test_List(t *testing.T) {
 					Name:         "Fuzz_Sample",
 					FileName:     "fuzz_test.go",
 					RelativePath: "fuzz_test.go",
-					AbsolutePath: fmt.Sprintf("%s/tests/fuzz_test.go", parentDir),
+					AbsolutePath: parentDir + "/tests/fuzz_test.go",
 					Line:         5,
 					Pos:          39,
 				},
@@ -87,8 +86,6 @@ func Test_List(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
-
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -98,6 +95,7 @@ func Test_List(t *testing.T) {
 
 				return
 			}
+
 			require.Equal(t, tt.want, got)
 		})
 	}
@@ -106,20 +104,23 @@ func Test_List(t *testing.T) {
 func generateFakeFiles(t *testing.T, dir string) {
 	t.Helper()
 
-	_ = os.Mkdir(fmt.Sprintf("%s/dummy", dir), 0o755)
-	_ = os.Mkdir(fmt.Sprintf("%s/sample", dir), 0o755)
+	_ = os.Mkdir(dir+"/dummy", 0o600)
+	_ = os.Mkdir(dir+"/sample", 0o600)
 
-	err := os.WriteFile(fmt.Sprintf("%s/dummy/dummy_test.go", dir), []byte(`package tests_test
+	//nolint:dupword
+	err := os.WriteFile(dir+"/dummy/dummy_test.go", []byte(`package tests_test 
 
 import (
 	"testing"
 )
 
 dummy dummy test
-`), os.ModePerm)
+`), 0o600)
 	require.NoError(t, err)
 
-	err = os.WriteFile(fmt.Sprintf("%s/sample/sample_test.go", dir), []byte(`package tests_test
+	err = os.WriteFile(dir+"/sample/sample_test.go", []byte(`
+
+package tests_test
 
 import (
 	"testing"
@@ -130,7 +131,8 @@ func TestSomething(t *testing.T) {
 	t.Skipf("Skipping...")
 	t.Log("Hello, world!")
 }
-`), os.ModePerm)
+
+`), 0o600)
 
 	require.NoError(t, err)
 }
@@ -139,9 +141,37 @@ var (
 	pwd, _    = os.Getwd()
 	parentDir = pwd[:len(pwd)-len("/pkg")]
 	expected  = []pkg.TestDetail{
-		{Name: "Test/5_+_5_=_10", FileName: "table_test.go", RelativePath: "table_test.go", AbsolutePath: fmt.Sprintf("%s/tests/table_test.go", parentDir), Line: 23, Pos: 265},
-		{Name: "Test/5_-_5_=_0", FileName: "table_test.go", RelativePath: "table_test.go", AbsolutePath: fmt.Sprintf("%s/tests/table_test.go", parentDir), Line: 30, Pos: 355},
-		{Name: "Test/mixed_subtest_1", FileName: "table_test.go", RelativePath: "table_test.go", AbsolutePath: fmt.Sprintf("%s/tests/table_test.go", parentDir), Line: 12, Pos: 111},
-		{Name: "Test/mixed_test_2", FileName: "table_test.go", RelativePath: "table_test.go", AbsolutePath: fmt.Sprintf("%s/tests/table_test.go", parentDir), Line: 48, Pos: 635},
+		{
+			Name:         "Test/5_+_5_=_10",
+			FileName:     "table_test.go",
+			RelativePath: "table_test.go",
+			AbsolutePath: parentDir + "%s/tests/table_test.go",
+			Line:         23,
+			Pos:          265,
+		},
+		{
+			Name:         "Test/5_-_5_=_0",
+			FileName:     "table_test.go",
+			RelativePath: "table_test.go",
+			AbsolutePath: parentDir + "%s/tests/table_test.go",
+			Line:         30,
+			Pos:          355,
+		},
+		{
+			Name:         "Test/mixed_subtest_1",
+			FileName:     "table_test.go",
+			RelativePath: "table_test.go",
+			AbsolutePath: parentDir + "%s/tests/table_test.go",
+			Line:         12,
+			Pos:          111,
+		},
+		{
+			Name:         "Test/mixed_test_2",
+			FileName:     "table_test.go",
+			RelativePath: "table_test.go",
+			AbsolutePath: parentDir + "%s/tests/table_test.go",
+			Line:         48,
+			Pos:          635,
+		},
 	}
 )

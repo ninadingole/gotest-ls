@@ -76,7 +76,7 @@ func Process(proc *args, writer io.Writer) error {
 
 	tests, err := pkg.List(proc.dirs)
 	if err != nil {
-		return fmt.Errorf("%s: %w", errUnknown, err)
+		return fmt.Errorf("%w: %w", errUnknown, err)
 	}
 
 	if len(tests) == 0 {
@@ -87,7 +87,7 @@ func Process(proc *args, writer io.Writer) error {
 
 	marshal, err := json.Marshal(tests)
 	if err != nil {
-		return fmt.Errorf("%s: %w", errUnknown, err)
+		return fmt.Errorf("%w: %w", errUnknown, err)
 	}
 
 	if proc.pretty {
@@ -110,7 +110,7 @@ func validateArgs(args *args) error {
 	if args.file != "" {
 		stat, err := os.Stat(args.file)
 		if err != nil {
-			return fmt.Errorf("%s: %w", errUnknown, err)
+			return fmt.Errorf("%w: %w", errUnknown, err)
 		}
 
 		if stat.IsDir() {
@@ -132,7 +132,7 @@ func prettyPrint(data []byte, writer io.Writer) error {
 
 	err := json.Indent(&prettyJSON, data, "", "\t")
 	if err != nil {
-		return fmt.Errorf("%s: %w", errUnknown, err)
+		return fmt.Errorf("%w: %w", errUnknown, err)
 	}
 
 	_, err = writer.Write(prettyJSON.Bytes())
