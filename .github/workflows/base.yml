@@ -8,14 +8,14 @@ on:
 
 env:
   GO111MODULE: on
-  GO_VERSION: 1.19.x
+  GO_VERSION: 1.23.x
 
 jobs:
   test:
     strategy:
         matrix:
             os: [ubuntu-latest, macos-latest]
-            go: [1.17.x, 1.18.x, 1.19.x]
+            go: [1.18.x, 1.23.x]
         fail-fast: false
     runs-on: ${{ matrix.os }}
 
